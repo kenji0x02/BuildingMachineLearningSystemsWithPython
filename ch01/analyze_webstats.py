@@ -5,28 +5,37 @@
 #
 # It is made available under the MIT License
 
+### 1.5.2 前処理とデータ整形
 import os
 from utils import DATA_DIR, CHART_DIR
 import scipy as sp
+# pyplotは散布図の表示に便利
 import matplotlib.pyplot as plt
 
 sp.random.seed(3)  # to reproduce the data later on
 
+# 画像の読み込み
 data = sp.genfromtxt(os.path.join(DATA_DIR, "web_traffic.tsv"), delimiter="\t")
+# あたま10つのデータを表示
 print(data[:10])
+# データ数を表示
 print(data.shape)
 
 # all examples will have three classes in this file
 colors = ['g', 'k', 'b', 'm', 'r']
 linestyles = ['-', '-.', '--', ':', '-']
 
+# 1列目のデータ
 x = data[:, 0]
+# 2列目のデータ
 y = data[:, 1]
+# nanである要素の数
 print("Number of invalid entries:", sp.sum(sp.isnan(y)))
+# nanでない要素の1列目、2列目のデータ
 x = x[~sp.isnan(y)]
 y = y[~sp.isnan(y)]
 
-
+# pyplotの表示とファイル出力
 def plot_models(x, y, models, fname, mx=None, ymax=None, xmin=None):
     ''' plot input data '''
 
@@ -56,17 +65,21 @@ def plot_models(x, y, models, fname, mx=None, ymax=None, xmin=None):
     if xmin:
         plt.xlim(xmin=xmin)
     plt.grid(True, linestyle='-', color='0.75')
+    # ファイルに出力
     plt.savefig(fname)
 
 # first look at the data
 plot_models(x, y, None, os.path.join(CHART_DIR, "1400_01_01.png"))
 
-# create and plot models
+### 1.5.3 正しいモデルの選択と機械学習
+# create and plot models:1次関数で近似
 fp1, res1, rank1, sv1, rcond1 = sp.polyfit(x, y, 1, full=True)
 print("Model parameters of fp1: %s" % fp1)
-print("Error of the model of fp1:", res1)
+print("Error of the model of fp1:", res1) # 近似誤差(rediduals)
+# モデル関数
 f1 = sp.poly1d(fp1)
 
+# 2次関数で近似
 fp2, res2, rank2, sv2, rcond2 = sp.polyfit(x, y, 2, full=True)
 print("Model parameters of fp2: %s" % fp2)
 print("Error of the model of fp2:", res2)
@@ -81,17 +94,17 @@ plot_models(
     x, y, [f1, f2, f3, f10, f100], os.path.join(CHART_DIR, "1400_01_04.png"))
 
 # fit and plot a model using the knowledge about inflection point
-inflection = 3.5 * 7 * 24
-xa = x[:inflection]
+inflection = 3.5 * 7 * 24 # 3.5週あたりで急に変化している
+xa = x[:inflection] # 変化前
 ya = y[:inflection]
-xb = x[inflection:]
+xb = x[inflection:] # 変化後
 yb = y[inflection:]
 
+# 変化前後を1次関数で近似
 fa = sp.poly1d(sp.polyfit(xa, ya, 1))
 fb = sp.poly1d(sp.polyfit(xb, yb, 1))
 
 plot_models(x, y, [fa, fb], os.path.join(CHART_DIR, "1400_01_05.png"))
-
 
 def error(f, x, y):
     return sp.sum((f(x) - y) ** 2)
@@ -105,7 +118,6 @@ for f in [f1, f2, f3, f10, f100]:
     print("Error d=%i: %f" % (f.order, error(f, xb, yb)))
 
 print("Error inflection=%f" % (error(fa, xa, ya) + error(fb, xb, yb)))
-
 
 # extrapolating into the future
 plot_models(
@@ -131,12 +143,17 @@ plot_models(
     mx=sp.linspace(0 * 7 * 24, 6 * 7 * 24, 100),
     ymax=10000, xmin=0 * 7 * 24)
 
+#### 訓練データとテストデータ
 # separating training from testing data
-frac = 0.3
+frac = 0.3 # テストに用いるデータの割合
 split_idx = int(frac * len(xb))
+# 全データの30パーセントをランダムに取り出す
 shuffled = sp.random.permutation(list(range(len(xb))))
+# テスト用のデータインデックス配列
 test = sorted(shuffled[:split_idx])
+# 訓練用のデータインデックス配列
 train = sorted(shuffled[split_idx:])
+# それぞれのデータを持ち家評価を行う
 fbt1 = sp.poly1d(sp.polyfit(xb[train], yb[train], 1))
 fbt2 = sp.poly1d(sp.polyfit(xb[train], yb[train], 2))
 print("fbt2(x)= \n%s" % fbt2)
@@ -149,14 +166,16 @@ print("Test errors for only the time after inflection point")
 for f in [fbt1, fbt2, fbt3, fbt10, fbt100]:
     print("Error d=%i: %f" % (f.order, error(f, xb[test], yb[test])))
 
+# 画像表示
 plot_models(
     x, y, [fbt1, fbt2, fbt3, fbt10, fbt100],
     os.path.join(CHART_DIR, "1400_01_08.png"),
     mx=sp.linspace(0 * 7 * 24, 6 * 7 * 24, 100),
     ymax=10000, xmin=0 * 7 * 24)
 
-from scipy.optimize import fsolve
-print(fbt2)
+#### 時間当たりのリクエストが100000を超える時期を予想する
+from scipy.optimize import fsolve # 多項式の解を求める
+print(fbt2) # 一番誤差が小さかった近似
 print(fbt2 - 100000)
 reached_max = fsolve(fbt2 - 100000, x0=800) / (7 * 24)
 print("100,000 hits/hour expected at week %f" % reached_max[0])

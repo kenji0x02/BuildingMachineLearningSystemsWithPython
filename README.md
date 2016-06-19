@@ -12,3 +12,7 @@ The code in the repository corresponds to the second edition. Code for the
 first edition is available in [first\_edition
 branch](https://github.com/luispedro/BuildingMachineLearningSystemsWithPython/tree/first_edition).
 
+## Pythonではじめる機械学習
+
+* 機械学習の作業においてもっとも大切なことは、データを理解しデータを扱いやすい形に整形すること。この作業にほとんどの時間を費やす
+* 正しい評価を行うにあたって、訓練データとテストデータを区別するということは極めて重要
