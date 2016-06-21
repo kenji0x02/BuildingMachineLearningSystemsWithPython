@@ -16,3 +16,8 @@ branch](https://github.com/luispedro/BuildingMachineLearningSystemsWithPython/tr
 
 * 機械学習の作業においてもっとも大切なことは、データを理解しデータを扱いやすい形に整形すること。この作業にほとんどの時間を費やす
 * 正しい評価を行うにあたって、訓練データとテストデータを区別するということは極めて重要
+
+## Python起動
+
+* ルートディレクトリで、`pyenv local miniconda3-4.0.5/envs/ml_env`と入力して仮想環境をactivate
+* `python ch01/analyze_webstats.py`などと入力して起動する
